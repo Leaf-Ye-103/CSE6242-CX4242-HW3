@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wildlife Trafficking Incidents per Species (2015 to 2023)</title>
+  <script src="lib/d3/d3.min.js"></script>
+  <script src="lib/d3-dsv/d3-dsv.min.js"></script>
+  <script src="lib/d3-fetch/d3-fetch.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .bar { stroke: black; stroke-width: 1px; }
+    .axis-label { font-size: 14px; font-weight: bold; }
+    .title { font-size: 18px; font-weight: bold; text-anchor: middle; }
+    .credit { font-size: 12px; text-anchor: end; }
+  </style>
+</head>
+<body>
+  <script>
+    const margin = {top: 50, right: 30, bottom: 50, left: 150},
+          width = 800 - margin.left - margin.right,
+          height = 400 - margin.top - margin.bottom;
+
+    const svg = d3.select("body").append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                  .append("g")
+                  .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    d3.dsv(",", "q3.csv", d => ({ species: d.species, count: +d.count }))
+      .then(data => {
+        data.sort((a, b) => b.count - a.count);
+        const top5 = data.slice(0, 5);
+
+        const x = d3.scaleLinear()
+                    .domain([0, d3.max(top5, d => d.count)])
+                    .range([0, width]);
+
+        const y = d3.scaleBand()
+                    .domain(top5.map(d => d.species))
+                    .range([0, height])
+                    .padding(0.2);
+
+        const color = d3.scaleOrdinal(d3.schemeSet2);
+
+        svg.append("g").attr("id", "bars")
+           .selectAll("rect")
+           .data(top5)
+           .enter().append("rect")
+           .attr("class", "bar")
+           .attr("x", 0)
+           .attr("y", d => y(d.species))
+           .attr("width", d => x(d.count))
+           .attr("height", y.bandwidth())
+           .attr("fill", (d, i) => color(i));
+
+        svg.append("g")
+           .attr("id", "x_axis")
+           .attr("transform", `translate(0,${height})`)
+           .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(",")));
+
+        svg.append("g")
+           .attr("id", "y_axis")
+           .call(d3.axisLeft(y));
+
+        svg.append("text")
+           .attr("id", "x_axis_label")
+           .attr("x", width / 2)
+           .attr("y", height + margin.bottom - 10)
+           .attr("class", "axis-label")
+           .style("text-anchor", "middle")
+           .text("Count");
+
+        svg.append("text")
+           .attr("id", "y_axis_label")
+           .attr("transform", "rotate(-90)")
+           .attr("x", -height / 2)
+           .attr("y", -margin.left + 20)
+           .attr("class", "axis-label")
+           .style("text-anchor", "middle")
+           .text("Species");
+
+        svg.append("text")
+           .attr("id", "title")
+           .attr("x", width / 2)
+           .attr("y", -10)
+           .attr("class", "title")
+           .text("Wildlife Trafficking Incidents per Species (2015 to 2023)");
+
+        svg.append("text")
+           .attr("id", "credit")
+           .attr("x", width)
+           .attr("y", height + margin.bottom - 5)
+           .attr("class", "credit")
+           .text("GT Username");
+      })
+      .catch(error => console.log(error));
+  </script>
+</body>
+</html>
